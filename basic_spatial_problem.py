@@ -33,8 +33,8 @@ class Agent:
         self.next_status = strategy
         return self.next_status
 
-    def change_status(self, next_status):
-        self.status = next_status
+    def change_status(self):
+        self.status = self.next_status
         return self.status
     
     def reset_payoff(self):
@@ -87,37 +87,50 @@ class Net:
                 chosen_agent = self.grid[i, j]
                 chosen_agent.reset_payoff()
 
-                neighbours = get_four_neighbours(i, j)
+                neighbours = self.get_four_neighbours(i, j)
                 sum_payoff = 0.0
 
                 for opponent in neighbours:
-                    payoff = play_one_time(chosen_agent, opponent)
+                    payoff = self.play_one_time(chosen_agent, opponent)
                     sum_payoff += payoff
 
                 chosen_agent.payoff = sum_payoff
 
 
-    def choose_best_strategy(self, i, j):
+    def choose_best_strategy(self):
         """najlepsza strategia: kazdy agent wybiera najlepsza strategie wsrod sasiadow do next_strategy"""
         for i in range(self.N):
             for j in range(self.N):
-                neighbours = get_four_neighbours(i, j)
-                chosen_agent = self.grid([i, j])
-                highest_payoff = 0.0
+                neighbours = self.get_four_neighbours(i, j)
+                chosen_agent = self.grid[i, j]
+                highest_payoff = chosen_agent.payoff
+                best_agent = chosen_agent
 
                 for neighbour in neighbours:
-                    payoff = gettatr(neighbour, "payoff")
-                    neighbour_strategy = gettatr(neighbour, "status")
+                    payoff = getattr(neighbour, "payoff")
 
                     if payoff > highest_payoff:
                         highest_payoff = payoff
-                        chosen_agent.prepare_next_strategy(neighbour_strategy)
+                        best_agent = neighbour
 
+                chosen_agent.prepare_next_strategy(best_agent.status)
 
+    def update_strategies(self):
+        """ aktualizacja strategii status=nastepny status"""
+        for i in range(self.N):
+            for j in range(self.N):
+                chosen_agent = self.grid[i, j]
+                chosen_agent.change_status()
 
-# agent = Agent([2,3], 0, 0, 0.0)
-# name = getattr(agent, 'status')
-# print(name)
+    def iterate(self):
+        """iteracja: -liczymy sume payoffow, wybieramy strategie, aaktualizacja """
+        self.sum_payoffs()
+        self.choose_best_strategy()
+        self.update_strategies()
 
-# siatka =  np.random.choice([0, 1], size=(10,10), p=[0.5, 0.5], replace=True)
-# print(siatka)
+    def simulate(self, time):
+        history = []
+        for t in range(time):
+            history.append(np.array([[self.grid[i, j].status for j in range(self.N)] for i in range(self.N)]))
+            self.iterate()
+        return history
