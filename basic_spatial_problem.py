@@ -50,22 +50,20 @@ class Net:
         self.T = T
         self.P = P
         self.S = S
-        #ta inicjalizacja grida jest slaba xD
-        self.grid = np.random.choice([1, 0], size=(N,N), p=[C_prob_start, 1-C_prob_start], replace=True) #1 for C, 0 for D
-
-
-    """lattice = np.array( [ [Site(i + j) for i in range(3)] for j in range(3) ],
-                        dtype=object)
-    """
-
+        self.grid = np.empty((N,N), dtype = object)
+        # self.grid = np.random.choice([1, 0], size=(N,N), p=[C_prob_start, 1-C_prob_start], replace=True) 
+        for i in range(N):
+            for j in range(N):
+                status = np.random.choice([1, 0], p=[C_prob_start, 1 - C_prob_start], replace=True) #1 for C, 0 for D
+                self.grid[i, j] = Agent(localization=(i, j), status=status, next_status=status, payoff=0.0)
 
 
     def get_four_neighbours(self, i, j): #i row, j column
         """ periodic """
-        u = Agent([i-1, j]) #,status, next_status, payoff)
-        r = Agent([i, (j+1)%self.N])
-        d = Agent([(i+1)%self.N, j])
-        l = Agent([i, j-1])
+        u = self.grid[i-1, j]
+        r = self.grid[i, (j+1)% self.N]
+        d = self.grid[(i+1)%self.N, j]
+        l = self.grid[i, j-1]
         return [u, r, d, l]
 
     def play_one_time(self, chosen_agent, opponent):  # zwraca payoff dla glownego agenta
@@ -82,10 +80,39 @@ class Net:
         elif status_chosen == 0 and status_opponent == 0:
             return self.P
 
-    def sum_payoffs(self, i, j): #for main agent
-        neighbours = get_four_neighbours(i, j)
+    def sum_payoffs(self): #for all 
+        """reset payoffow dla main agenta, metoda graj z jednym sasiadem dla kazdego, zsumuj payoffy """
+        for i in range(self.N):
+            for j in range(self.N):
+                chosen_agent = self.grid[i, j]
+                chosen_agent.reset_payoff()
 
-        
+                neighbours = get_four_neighbours(i, j)
+                sum_payoff = 0.0
+
+                for opponent in neighbours:
+                    payoff = play_one_time(chosen_agent, opponent)
+                    sum_payoff += payoff
+
+                chosen_agent.payoff = sum_payoff
+
+
+    def choose_best_strategy(self, i, j):
+        """najlepsza strategia: kazdy agent wybiera najlepsza strategie wsrod sasiadow do next_strategy"""
+        for i in range(self.N):
+            for j in range(self.N):
+                neighbours = get_four_neighbours(i, j)
+                chosen_agent = self.grid([i, j])
+                highest_payoff = 0.0
+
+                for neighbour in neighbours:
+                    payoff = gettatr(neighbour, "payoff")
+                    neighbour_strategy = gettatr(neighbour, "status")
+
+                    if payoff > highest_payoff:
+                        highest_payoff = payoff
+                        chosen_agent.prepare_next_strategy(neighbour_strategy)
+
 
 
 # agent = Agent([2,3], 0, 0, 0.0)
