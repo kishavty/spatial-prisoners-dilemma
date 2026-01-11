@@ -57,6 +57,8 @@ class Net:
                 status = np.random.choice([1, 0], p=[C_prob_start, 1 - C_prob_start], replace=True) #1 for C, 0 for D
                 self.grid[i, j] = Agent(localization=(i, j), status=status, next_status=status, payoff=0.0)
 
+    def init_coop_cluster(self): # TODO
+        return self.grid
 
     def get_four_neighbours(self, i, j): #i row, j column
         """ periodic """
@@ -128,9 +130,32 @@ class Net:
         self.choose_best_strategy()
         self.update_strategies()
 
+    def return_statuses(self):
+        return np.array([[self.grid[i, j].status for j in range(self.N)] for i in range(self.N)])
+
+
+    def cooperators_ratio(self):
+        """ratio=cooperators (symbol 1) /(n*n)"""
+        statuses = self.return_statuses()
+        return float(np.mean())
+
     def simulate(self, time):
         history = []
+        retios = []
         for t in range(time):
-            history.append(np.array([[self.grid[i, j].status for j in range(self.N)] for i in range(self.N)]))
+            history.append(self.return_statuses())
+            ratios.append(self.cooperators_ratio())
             self.iterate()
         return history
+
+
+# net = Net(
+#     N=40,
+#     C_prob_start=0.0,
+#     R=3.0,
+#     T=3.5,
+#     P=0.5,
+#     S=0.0)
+
+# net.init_single_cluster_3x3()
+# history = net.simulate(time=50)
