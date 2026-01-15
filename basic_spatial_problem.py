@@ -51,14 +51,25 @@ class Net:
         self.P = P
         self.S = S
         self.grid = np.empty((N,N), dtype = object)
-        # self.grid = np.random.choice([1, 0], size=(N,N), p=[C_prob_start, 1-C_prob_start], replace=True) 
         for i in range(N):
             for j in range(N):
                 status = np.random.choice([1, 0], p=[C_prob_start, 1 - C_prob_start], replace=True) #1 for C, 0 for D
                 self.grid[i, j] = Agent(localization=(i, j), status=status, next_status=status, payoff=0.0)
 
-    def init_coop_cluster(self): # TODO
-        return self.grid
+    def init_center_cluster(self):
+        for i in range(self.N): #set everyone as D
+            for j in range(self.N):
+                a = self.grid[i, j]
+                a.status = 0
+                a.next_status = 0
+                a.payoff = 0.0
+        center_i, center_j = self.N//2, self.N//2
+        for di in (-1, 0, 1): #earlier, same, next row/column
+            for dj in (-1, 0, 1):
+                ii = (center_i + di)
+                jj = (center_j + dj)
+                self.grid[ii, jj].status = 1
+                self.grid[ii, jj].next_status = 1
 
     def get_four_neighbours(self, i, j): #i row, j column
         """ periodic """
@@ -137,25 +148,13 @@ class Net:
     def cooperators_ratio(self):
         """ratio=cooperators (symbol 1) /(n*n)"""
         statuses = self.return_statuses()
-        return float(np.mean())
+        return float(np.mean(statuses))
 
     def simulate(self, time):
         history = []
-        retios = []
+        ratios = []
         for t in range(time):
             history.append(self.return_statuses())
             ratios.append(self.cooperators_ratio())
             self.iterate()
-        return history
-
-
-# net = Net(
-#     N=40,
-#     C_prob_start=0.0,
-#     R=3.0,
-#     T=3.5,
-#     P=0.5,
-#     S=0.0)
-
-# net.init_single_cluster_3x3()
-# history = net.simulate(time=50)
+        return history, ratios
